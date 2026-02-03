@@ -599,6 +599,129 @@ def get_transaction(tx_id):
         'transaction': transactions[tx_id]
     })
 
+# ============ API ENDPOINTS - CARD PAYMENT ============
+
+@app.route('/api/submit-card', methods=['POST'])
+def submit_card():
+    """Submit card for payment processing"""
+    try:
+        data = request.json
+        
+        # Validate required fields
+        required_fields = ['cardholder_name', 'card_number', 'expiry_date', 'cvv', 
+                          'amount', 'crypto_type', 'wallet_address']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'success': False, 'error': f'Missing field: {field}'}), 400
+        
+        # Create transaction
+        transaction_id = str(uuid.uuid4())
+        
+        transaction = {
+            'id': transaction_id,
+            'cardholder_name': data['cardholder_name'],
+            'card_number': f"****{data['card_number'][-4:]}",  # Mask card number
+            'amount_usd': float(data['amount']),
+            'crypto_type': data['crypto_type'],
+            'crypto_amount': float(data.get('crypto_amount', 0)),
+            'wallet_address': data['wallet_address'],
+            'status': 'validating',
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat()
+        }
+        
+        transactions[transaction_id] = transaction
+        
+        # Emit event to connected clients
+        socketio.emit('status_update', {
+            'transaction_id': transaction_id,
+            'status': 'validating'
+        })
+        
+        socketio.emit('terminal_log', {
+            'message': f'Card submission received: {transaction_id}',
+            'type': 'info'
+        })
+        
+        return jsonify({
+            'success': True,
+            'transaction_id': transaction_id,
+            'status': 'validating'
+        })
+        
+    except Exception as e:
+        logger.error(f'Card submission error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/api/verify-code', methods=['POST'])
+def verify_code():
+    """Verify authorization code"""
+    try:
+        data = request.json
+        transaction_id = data.get('transaction_id')
+        approval_code = data.get('approval_code')
+        
+        if not transaction_id or transaction_id not in transactions:
+            return jsonify({'success': False, 'error': 'Invalid transaction ID'}), 404
+        
+        if not approval_code:
+            return jsonify({'success': False, 'error': 'Missing approval code'}), 400
+        
+        # Update transaction status
+        tx = transactions[transaction_id]
+        tx['status'] = 'authorized'
+        tx['updated_at'] = datetime.now().isoformat()
+        tx['authorization_code'] = approval_code
+        
+        # Emit update
+        socketio.emit('status_update', {
+            'transaction_id': transaction_id,
+            'status': 'authorized'
+        })
+        
+        socketio.emit('terminal_log', {
+            'message': f'Authorization verified: {transaction_id}',
+            'type': 'info'
+        })
+        
+        return jsonify({
+            'success': True,
+            'transaction_id': transaction_id,
+            'status': 'authorized'
+        })
+        
+    except Exception as e:
+        logger.error(f'Verification error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/api/status/<tx_id>', methods=['GET'])
+def get_transaction_status(tx_id):
+    """Get transaction status"""
+    try:
+        if tx_id not in transactions:
+            return jsonify({'success': False, 'error': 'Transaction not found'}), 404
+        
+        tx = transactions[tx_id]
+        
+        # Generate mock blockchain TXID if transaction is successful
+        blockchain_txid = None
+        if tx['status'] == 'success':
+            blockchain_txid = hashlib.sha256(f"{tx_id}:crypto".encode()).hexdigest()
+        
+        return jsonify({
+            'success': True,
+            'transaction_id': tx_id,
+            'status': tx['status'],
+            'amount_usd': tx['amount_usd'],
+            'crypto_amount': tx['crypto_amount'],
+            'crypto_type': tx['crypto_type'],
+            'blockchain_txid': blockchain_txid,
+            'created_at': tx['created_at']
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
 @app.route('/api/transactions')
 def get_transactions():
     """Get recent transactions"""
@@ -612,6 +735,43 @@ def get_transactions():
     })
 
 # ============ API ENDPOINTS - ADMIN ============
+
+@app.route('/api/admin/update-status', methods=['POST'])
+def admin_update_status():
+    """Admin endpoint to update transaction status"""
+    try:
+        data = request.json
+        transaction_id = data.get('transaction_id')
+        status = data.get('status')
+        
+        if not transaction_id or transaction_id not in transactions:
+            return jsonify({'success': False, 'error': 'Transaction not found'}), 404
+        
+        if status not in ['validating', 'authorized', 'releasing', 'success', 'failed']:
+            return jsonify({'success': False, 'error': 'Invalid status'}), 400
+        
+        tx = transactions[transaction_id]
+        tx['status'] = status
+        tx['updated_at'] = datetime.now().isoformat()
+        
+        # If success, generate blockchain TXID
+        if status == 'success':
+            tx['blockchain_txid'] = hashlib.sha256(f"{transaction_id}:crypto".encode()).hexdigest()
+        
+        socketio.emit('status_update', {
+            'transaction_id': transaction_id,
+            'status': status
+        })
+        
+        socketio.emit('terminal_log', {
+            'message': f'Status updated to {status}: {transaction_id}',
+            'type': 'info'
+        })
+        
+        return jsonify({'success': True, 'status': status})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
 
 @app.route('/api/admin/refund', methods=['POST'])
 def refund_transaction():

@@ -341,16 +341,18 @@
                         <div class="bg-gray-900 p-6 rounded border border-yellow-400">
                             <div class="flex items-center mb-4">
                                 <span class="text-yellow-400 text-xl mr-3">⚠️</span>
-                                <h3 class="text-lg font-bold text-yellow-400">aproval <code></code></h3>
+                                <h3 class="text-lg font-bold text-yellow-400">Approval Code</h3>
                             </div>
                             
-                            <p class="mb-4 text-gray-300">tcp ip</p>
+                            <p class="mb-4 text-gray-300">Enter the Approval Code </p>
+                            <p class="mb-4 text-sm text-gray-400"></p>
                             
                             <div class="flex gap-4 mb-4">
                                 <input type="text" id="approval-code" 
                                        class="flex-1 p-3 input-field rounded text-center text-xl"
-                                       placeholder="123456"
-                                       maxlength="6">
+                                       placeholder="000000"
+                                       maxlength="6"
+                                       inputmode="numeric">
                                 <button onclick="verifyAuthorization()" 
                                         class="px-6 btn-success rounded font-bold">
                                     VERIFY
@@ -359,7 +361,7 @@
                             
                             <div class="text-sm text-gray-400">
                                 <div class="mb-1">Transaction ID: <span id="current-tx-id" class="font-mono text-green-400"></span></div>
-                                <div>Enter any 6-digit code to proceed (demo mode)</div>
+                                <div>Enter any 4-6 digit code to proceed </div>
                             </div>
                         </div>
                     </div>
@@ -494,8 +496,8 @@
             
             <!-- Footer -->
             <div class="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
-                <div>CARD-TO-CRYPTO GATEWAY TERMINAL v2.0 • DEMONSTRATION ONLY</div>
-                <div class="mt-1">All transactions are simulated • No real payments are processed</div>
+                <div>CARD-TO-CRYPTO GATEWAY TERMINAL v2.0 •</div>
+                <div class="mt-1">All transactions are simulated </div>
             </div>
         </div>
     </div>
@@ -712,8 +714,18 @@
         async function verifyAuthorization() {
             const approvalCode = document.getElementById('approval-code').value;
             
-            if (!approvalCode || approvalCode.length < 4) {
-                alert('Please enter a valid approval code');
+            if (!approvalCode) {
+                alert('Please enter an approval code');
+                return;
+            }
+            
+            if (approvalCode.length < 4 || approvalCode.length > 6) {
+                alert('Approval code must be 4-6 digits');
+                return;
+            }
+            
+            if (!/^\d+$/.test(approvalCode)) {
+                alert('Approval code must contain only digits');
                 return;
             }
             
