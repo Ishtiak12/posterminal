@@ -11,7 +11,9 @@ pycryptodome==3.19.0
 cryptography==41.0.7
 pyopenssl==23.3.0
 # Database
-sqlite3
+# Note: `sqlite3` is part of the Python standard library and must not
+# be listed in requirements.txt; remove the package entry to avoid
+# installation errors on deployment platforms.
 # Utilities
 python-dateutil==2.8.2
 # Async support
