@@ -14,6 +14,13 @@ from dotenv import load_dotenv
 from vpos_integrations import get_vpos_provider
 from pre_auth import PreAuthenticationService
 
+# Import EMV modules
+from emv_kernel import create_emv_kernel, CardData, TransactionData, TransactionType
+from offline_storage import create_storage
+from pin_verification import OfflinePINVerifier, PINVerificationFlow
+from batch_processing import BatchProcessor, SettlementProcessor, ReconciliationProcessor, ReversalProcessor
+from receipt_generator import generate_receipt
+
 load_dotenv()
 
 # Setup logging
@@ -27,6 +34,15 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Initialize Pre-Authentication Service
 pre_auth_service = PreAuthenticationService()
 
+# Initialize EMV and Offline Storage
+emv_kernel = None
+offline_storage = None
+pin_verifier = None
+batch_processor = None
+settlement_processor = None
+reconciliation_processor = None
+reversal_processor = None
+
 # Configuration
 PAYMENT_API_URL = os.getenv('PAYMENT_API_URL', 'https://api.payment-gateway.com')
 PAYMENT_API_KEY = os.getenv('PAYMENT_API_KEY', 'your_api_key_here')
@@ -39,10 +55,75 @@ VPOS_MERCHANT_ID = os.getenv('VPOS_MERCHANT_ID', 'merchant_001')
 VPOS_API_KEY = os.getenv('VPOS_API_KEY', 'your_vpos_key_here')
 VPOS_OUTLET_ID = os.getenv('VPOS_OUTLET_ID', OUTLET_ID)
 
+# EMV Configuration
+EMV_TERMINAL_ID = os.getenv('EMV_TERMINAL_ID', 'TERM001')
+EMV_MERCHANT_ID = os.getenv('EMV_MERCHANT_ID', 'MERCH001')
+EMV_MERCHANT_NAME = os.getenv('EMV_MERCHANT_NAME', 'Test Merchant')
+EMV_FLOOR_LIMIT = float(os.getenv('EMV_FLOOR_LIMIT', '500.0'))
+EMV_DB_PATH = os.getenv('EMV_DB_PATH', os.path.join(os.path.expanduser('~'), '.vpos', 'offline.db'))
+
 # In-memory storage for transactions
 transactions = {}
 orders = {}
 vpos_sessions = {}  # Store vPOS provider instances per session
+
+def init_emv_system():
+    """Initialize EMV system components"""
+    global emv_kernel, offline_storage, pin_verifier, batch_processor
+    global settlement_processor, reconciliation_processor, reversal_processor
+    
+    try:
+        # Create EMV kernel
+        terminal_config = {
+            'terminal_id': EMV_TERMINAL_ID,
+            'merchant_id': EMV_MERCHANT_ID,
+            'merchant_name': EMV_MERCHANT_NAME,
+            'country_code': '840',
+            'currency_code': '840',
+            'currency_exponent': 2,
+            'floor_limit': EMV_FLOOR_LIMIT,
+            'target_percentage': 10.0,
+        }
+        emv_kernel = create_emv_kernel(terminal_config)
+        logger.info("EMV Kernel initialized")
+        
+        # Create offline storage
+        offline_storage = create_storage(EMV_DB_PATH)
+        logger.info(f"Offline storage initialized: {EMV_DB_PATH}")
+        
+        # Create PIN verifier
+        pin_verifier = OfflinePINVerifier()
+        logger.info("PIN Verifier initialized")
+        
+        # Create batch processors
+        batch_processor = BatchProcessor(
+            offline_storage,
+            api_endpoint=PAYMENT_API_URL,
+            api_key=PAYMENT_API_KEY
+        )
+        settlement_processor = SettlementProcessor(
+            offline_storage,
+            api_endpoint=PAYMENT_API_URL,
+            api_key=PAYMENT_API_KEY
+        )
+        reconciliation_processor = ReconciliationProcessor(
+            offline_storage,
+            api_endpoint=PAYMENT_API_URL,
+            api_key=PAYMENT_API_KEY
+        )
+        reversal_processor = ReversalProcessor(
+            offline_storage,
+            api_endpoint=PAYMENT_API_URL,
+            api_key=PAYMENT_API_KEY
+        )
+        logger.info("Batch processors initialized")
+        
+    except Exception as e:
+        logger.error(f"EMV system initialization error: {str(e)}")
+
+# Initialize on startup
+with app.app_context():
+    init_emv_system()
 
 # ============ ROUTES ============
 
@@ -975,6 +1056,366 @@ def get_pre_auth_audit(pre_auth_id):
     except Exception as e:
         logger.error(f'Audit log error: {str(e)}')
         return jsonify({'success': False, 'error': str(e)}), 400
+
+
+# ============ EMV OFFLINE PAYMENT ROUTES ============
+
+@app.route('/api/emv/initialize', methods=['POST'])
+def emv_initialize():
+    """Initialize EMV offline payment session"""
+    try:
+        if not emv_kernel:
+            return jsonify({
+                'success': False,
+                'error': 'EMV system not initialized'
+            }), 500
+        
+        session_id = str(uuid.uuid4())
+        
+        socketio.emit('terminal_log', {
+            'message': 'EMV Terminal initialized - Ready for offline transactions',
+            'type': 'info'
+        })
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'terminal_id': EMV_TERMINAL_ID,
+            'merchant_id': EMV_MERCHANT_ID,
+            'floor_limit': EMV_FLOOR_LIMIT,
+            'timestamp': datetime.now().isoformat()
+        }), 200
+        
+    except Exception as e:
+        logger.error(f'EMV initialization error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/emv/process-offline-transaction', methods=['POST'])
+def process_offline_emv_transaction():
+    """
+    Process offline EMV transaction
+    Complete flow: Card reading → CVM → TAC analysis → TC generation
+    """
+    try:
+        if not emv_kernel or not offline_storage or not pin_verifier:
+            return jsonify({
+                'success': False,
+                'error': 'EMV system not fully initialized'
+            }), 500
+        
+        data = request.json
+        
+        # Extract card data
+        card_data = CardData(
+            pan=data.get('pan', '4111111111111111'),
+            track2=data.get('track2', '4111111111111111=2512123456789012'),
+            expiry=data.get('expiry', '2512'),
+            cvc=data.get('cvc', '123'),
+            cardholder_name=data.get('cardholder_name', 'TEST USER'),
+            icc_data=data.get('icc_data', b'').encode() if isinstance(data.get('icc_data'), str) else b'',
+            afl=data.get('afl', '08010102'),
+            aip=data.get('aip', '9800'),
+            cvm_list=data.get('cvm_list', '01059F34020102'),
+            iac_default=data.get('iac_default', '0000000000'),
+            iac_denial=data.get('iac_denial', 'FFFFFFFFFF'),
+            iac_online=data.get('iac_online', '8000008000'),
+            iss_script_processing=data.get('iss_script_processing', False),
+            pin_try_limit=data.get('pin_try_limit', 3),
+            iac_ddol=data.get('iac_ddol', '9F3704'),
+            iac_tdol=data.get('iac_tdol', '9F270101')
+        )
+        
+        # Extract transaction data
+        transaction_data = TransactionData(
+            amount=float(data.get('amount', 100.0)),
+            amount_other=float(data.get('amount_other', 0.0)),
+            transaction_type=TransactionType.PURCHASE,
+            transaction_currency_code='USD',
+            transaction_currency_exponent=2,
+            transaction_date=datetime.now().strftime('%y%m%d'),
+            transaction_time=datetime.now().strftime('%H%M%S'),
+            transaction_reference=str(uuid.uuid4())[:16]
+        )
+        
+        # Process EMV transaction
+        tx_result = emv_kernel.process_offline_transaction(
+            card_data,
+            transaction_data,
+            pin=data.get('pin', '1234')
+        )
+        
+        # Add EMV-specific fields
+        tx_result['terminal_id'] = EMV_TERMINAL_ID
+        tx_result['merchant_id'] = EMV_MERCHANT_ID
+        tx_result['currency'] = 'USD'
+        
+        # Verify PIN if CVM is offline PIN
+        pin_result = pin_verifier.verify_offline_pin(
+            card_data.pan,
+            data.get('pin', '1234')
+        )
+        
+        tx_result['pin_verification'] = pin_result
+        
+        # Store offline transaction
+        if tx_result['status'] in ['APPROVED', 'REFERRAL']:
+            storage_result = offline_storage.store_transaction(tx_result)
+            tx_result['stored'] = storage_result
+        
+        # Generate receipt
+        receipt = generate_receipt(tx_result)
+        tx_result['receipt'] = receipt
+        
+        # Store transaction in memory
+        transactions[tx_result['transaction_id']] = tx_result
+        
+        socketio.emit('transaction_completed', {
+            'transaction_id': tx_result['transaction_id'],
+            'status': tx_result['status'],
+            'amount': tx_result['amount'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        logger.info(f"EMV transaction processed: {tx_result['transaction_id']}")
+        
+        return jsonify({
+            'success': True,
+            'transaction': tx_result
+        }), 200
+        
+    except Exception as e:
+        logger.error(f'EMV transaction error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/emv/get-transaction/<transaction_id>', methods=['GET'])
+def get_emv_transaction(transaction_id):
+    """Retrieve transaction details"""
+    try:
+        # Check memory first
+        if transaction_id in transactions:
+            return jsonify({
+                'success': True,
+                'transaction': transactions[transaction_id]
+            }), 200
+        
+        # Check offline storage
+        if offline_storage:
+            tx = offline_storage.retrieve_transaction(transaction_id)
+            if tx:
+                return jsonify({
+                    'success': True,
+                    'transaction': tx
+                }), 200
+        
+        return jsonify({
+            'success': False,
+            'error': 'Transaction not found'
+        }), 404
+        
+    except Exception as e:
+        logger.error(f'Get transaction error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/emv/pending-transactions', methods=['GET'])
+def get_pending_transactions():
+    """Get pending offline transactions"""
+    try:
+        if not offline_storage:
+            return jsonify({
+                'success': False,
+                'error': 'Storage not available'
+            }), 500
+        
+        limit = request.args.get('limit', 100, type=int)
+        pending_txs = offline_storage.get_pending_transactions(limit)
+        
+        return jsonify({
+            'success': True,
+            'count': len(pending_txs),
+            'transactions': pending_txs
+        }), 200
+        
+    except Exception as e:
+        logger.error(f'Get pending transactions error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/emv/batch-upload', methods=['POST'])
+def batch_upload():
+    """
+    Create and upload batch of pending transactions
+    Requires internet connectivity
+    """
+    try:
+        if not batch_processor or not offline_storage:
+            return jsonify({
+                'success': False,
+                'error': 'Batch processor not available'
+            }), 500
+        
+        data = request.json
+        transaction_ids = data.get('transaction_ids', [])
+        
+        if not transaction_ids:
+            # Auto-fetch pending transactions
+            pending = offline_storage.get_pending_transactions(limit=100)
+            transaction_ids = [tx.get('id') for tx in pending]
+        
+        # Create batch file
+        batch_data = batch_processor.create_batch_file(
+            EMV_TERMINAL_ID,
+            EMV_MERCHANT_ID,
+            transaction_ids
+        )
+        
+        if not batch_data:
+            return jsonify({
+                'success': False,
+                'error': 'Failed to create batch'
+            }), 400
+        
+        # Upload batch
+        upload_result = batch_processor.upload_batch(batch_data)
+        
+        socketio.emit('batch_uploaded', {
+            'batch_id': batch_data.get('batch_id'),
+            'transaction_count': len(transaction_ids),
+            'status': upload_result.get('status'),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        logger.info(f"Batch uploaded: {batch_data.get('batch_id')}")
+        
+        return jsonify({
+            'success': upload_result.get('status') == 'UPLOADED',
+            'batch_id': batch_data.get('batch_id'),
+            'transaction_count': len(transaction_ids),
+            'upload_result': upload_result
+        }), 200
+        
+    except Exception as e:
+        logger.error(f'Batch upload error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/emv/settlement/<batch_id>', methods=['POST'])
+def initiate_settlement(batch_id):
+    """Initiate settlement for batch"""
+    try:
+        if not settlement_processor:
+            return jsonify({
+                'success': False,
+                'error': 'Settlement processor not available'
+            }), 500
+        
+        settlement = settlement_processor.process_settlement(batch_id)
+        
+        socketio.emit('settlement_initiated', {
+            'batch_id': batch_id,
+            'status': settlement.get('status'),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        return jsonify({
+            'success': settlement.get('status') == 'COMPLETED',
+            'settlement': settlement
+        }), 200
+        
+    except Exception as e:
+        logger.error(f'Settlement error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/emv/reconciliation/<batch_id>', methods=['POST'])
+def reconcile_batch(batch_id):
+    """Reconcile batch with bank records"""
+    try:
+        if not reconciliation_processor:
+            return jsonify({
+                'success': False,
+                'error': 'Reconciliation processor not available'
+            }), 500
+        
+        data = request.json
+        reconciliation = reconciliation_processor.reconcile_batch(
+            batch_id,
+            bank_data=data.get('bank_data')
+        )
+        
+        return jsonify({
+            'success': True,
+            'reconciliation': reconciliation
+        }), 200
+        
+    except Exception as e:
+        logger.error(f'Reconciliation error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/emv/reversal/<transaction_id>', methods=['POST'])
+def request_reversal(transaction_id):
+    """Request transaction reversal"""
+    try:
+        if not reversal_processor:
+            return jsonify({
+                'success': False,
+                'error': 'Reversal processor not available'
+            }), 500
+        
+        data = request.json
+        reversal = reversal_processor.request_reversal(
+            transaction_id,
+            reason=data.get('reason'),
+            reversal_amount=data.get('amount')
+        )
+        
+        socketio.emit('reversal_requested', {
+            'transaction_id': transaction_id,
+            'reversal_id': reversal.get('reversal_id'),
+            'status': reversal.get('status'),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        return jsonify({
+            'success': reversal.get('status') == 'REQUESTED',
+            'reversal': reversal
+        }), 200
+        
+    except Exception as e:
+        logger.error(f'Reversal request error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/emv/status', methods=['GET'])
+def emv_system_status():
+    """Get EMV system status"""
+    try:
+        status = {
+            'emv_kernel': emv_kernel is not None,
+            'offline_storage': offline_storage is not None,
+            'pin_verifier': pin_verifier is not None,
+            'batch_processor': batch_processor is not None,
+            'terminal_id': EMV_TERMINAL_ID,
+            'merchant_id': EMV_MERCHANT_ID,
+            'floor_limit': EMV_FLOOR_LIMIT,
+            'pending_transactions': 0
+        }
+        
+        if offline_storage:
+            pending = offline_storage.get_pending_transactions(limit=1)
+            status['pending_transactions'] = len(pending)
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        }), 200
+        
+    except Exception as e:
+        logger.error(f'System status error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============ WEBSOCKET EVENTS ============
 
