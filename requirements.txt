@@ -19,3 +19,7 @@ python-dateutil==2.8.2
 # Async support
 celery==5.3.4
 redis==5.0.1
+
+# gRPC / protobuf
+grpcio==1.58.0
+grpcio-tools==1.58.0

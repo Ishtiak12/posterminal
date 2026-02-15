@@ -298,14 +298,11 @@
                             </div>
                             <div>
                                 <label class="block text-sm mb-2 text-gray-300">AMOUNT (USD)</label>
-                                <div class="flex gap-2 mb-2">
-                                    <button onclick="setAmount(100)" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">$100</button>
-                                    <button onclick="setAmount(500)" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">$500</button>
-                                    <button onclick="setAmount(1000)" class="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">$1000</button>
-                                </div>
-                                <input type="number" id="amount" 
-                                       class="w-full p-3 input-field rounded"
-                                       value="100">
+                                    <input type="number" id="amount" 
+                                        class="w-full p-3 input-field rounded"
+                                        value=""
+                                        placeholder="Enter amount"
+                                        min="0.01" step="0.01">
                             </div>
                             <div>
                                 <label class="block text-sm mb-2 text-gray-300">CRYPTO TYPE</label>
@@ -550,9 +547,7 @@
         });
         
         // Helper functions
-        function setAmount(amount) {
-            document.getElementById('amount').value = amount;
-        }
+        // preset amount function removed; amount is entered manually by user
         
         function setCrypto(type) {
             document.getElementById('crypto-type').value = type;

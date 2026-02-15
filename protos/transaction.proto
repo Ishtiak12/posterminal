@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package posterminal.protocols;
+
+option python_package = "protos";
+
+message TransactionRequest {
+  string transaction_id = 1;
+  double amount = 2;
+  string currency = 3;
+  string pan = 4;
+  string expiry = 5;
+  string cvc = 6;
+  string cardholder_name = 7;
+  string pin = 8;
+}
+
+message TransactionResponse {
+  bool success = 1;
+  string transaction_id = 2;
+  string status = 3;
+  string message = 4;
+}
+
+service TransactionService {
+  rpc ProcessTransaction (TransactionRequest) returns (TransactionResponse);
+}
