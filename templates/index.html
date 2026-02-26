@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +9,7 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cascadia+Code&display=swap');
-        
+
         body {
             font-family: 'Cascadia Code', monospace;
             background: #0c0c0c;
@@ -17,77 +18,82 @@
             padding: 0;
             min-height: 100vh;
         }
-        
+
         .scanlines {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(
-                to bottom,
-                transparent 50%,
-                rgba(0, 0, 0, 0.2) 50%
-            );
+            background: linear-gradient(to bottom,
+                    transparent 50%,
+                    rgba(0, 0, 0, 0.2) 50%);
             background-size: 100% 4px;
             pointer-events: none;
             z-index: 100;
             opacity: 0.1;
         }
-        
+
         .terminal-bar {
             background: linear-gradient(90deg, #1a1a1a, #2d2d2d);
             border-radius: 8px 8px 0 0;
             padding: 12px;
             border-bottom: 1px solid #333;
         }
-        
+
         .terminal-button {
             width: 12px;
             height: 12px;
             border-radius: 50%;
             display: inline-block;
             margin-right: 8px;
-            box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+            box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.5);
         }
-        
+
         .terminal-content {
             background: #1e1e1e;
             border: 1px solid #333;
             border-radius: 0 0 8px 8px;
-            box-shadow: 
+            box-shadow:
                 0 20px 40px rgba(0, 0, 0, 0.8),
                 0 0 0 1px rgba(0, 255, 0, 0.1) inset;
         }
-        
+
         .typewriter {
             border-right: 2px solid #00ff00;
             animation: blink 1s infinite;
         }
-        
+
         @keyframes blink {
-            0%, 100% { border-color: transparent; }
-            50% { border-color: #00ff00; }
+
+            0%,
+            100% {
+                border-color: transparent;
+            }
+
+            50% {
+                border-color: #00ff00;
+            }
         }
-        
+
         .input-field {
             background: #2d2d2d;
             border: 1px solid #404040;
             color: #00ff00;
             transition: all 0.3s ease;
         }
-        
+
         .input-field:focus {
             border-color: #0078d4;
             outline: none;
             box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.3);
         }
-        
+
         .input-field.valid {
             border-color: #00ff00;
             box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
         }
-        
+
         .btn-primary {
             background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%);
             color: white;
@@ -95,7 +101,7 @@
             position: relative;
             overflow: hidden;
         }
-        
+
         .btn-primary::before {
             content: '';
             position: absolute;
@@ -106,17 +112,17 @@
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
             transition: left 0.5s;
         }
-        
+
         .btn-primary:hover::before {
             left: 100%;
         }
-        
+
         .btn-success {
             background: linear-gradient(135deg, #107c10 0%, #0e700e 100%);
             color: white;
             border: none;
         }
-        
+
         .status-indicator {
             width: 8px;
             height: 8px;
@@ -124,16 +130,16 @@
             display: inline-block;
             margin-right: 8px;
         }
-        
+
         .status-active {
             color: #00ff00;
             text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
         }
-        
+
         .status-complete {
             color: #0078d4;
         }
-        
+
         .terminal-output {
             background: #000;
             border: 1px solid #333;
@@ -142,24 +148,24 @@
             max-height: 200px;
             overflow-y: auto;
         }
-        
+
         .terminal-output::-webkit-scrollbar {
             width: 6px;
         }
-        
+
         .terminal-output::-webkit-scrollbar-track {
             background: #1a1a1a;
         }
-        
+
         .terminal-output::-webkit-scrollbar-thumb {
             background: #0078d4;
             border-radius: 3px;
         }
-        
+
         .blink {
             animation: blink 1s infinite;
         }
-        
+
         .progress-bar {
             height: 3px;
             background: #333;
@@ -167,7 +173,7 @@
             overflow: hidden;
             position: relative;
         }
-        
+
         .progress-bar::after {
             content: '';
             position: absolute;
@@ -178,12 +184,17 @@
             background: linear-gradient(90deg, transparent, #00ff00, transparent);
             animation: progress 2s infinite linear;
         }
-        
+
         @keyframes progress {
-            0% { left: -100%; }
-            100% { left: 100%; }
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
         }
-        
+
         .crypto-amount {
             background: linear-gradient(90deg, #0078d4, #00ff00);
             -webkit-background-clip: text;
@@ -191,7 +202,7 @@
             background-clip: text;
             font-weight: bold;
         }
-        
+
         .mock-txid {
             color: #00ff00;
             font-family: monospace;
@@ -202,30 +213,48 @@
             border-radius: 2px;
             border: 1px solid rgba(0, 255, 0, 0.2);
         }
-        
+
         .transaction-item {
             transition: all 0.3s ease;
         }
-        
+
         .transaction-item:hover {
             background: rgba(255, 255, 255, 0.05);
             transform: translateX(5px);
         }
-        
+
         .pulse {
             animation: pulse 2s infinite;
         }
-        
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .protocol-card {
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .protocol-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 0, 0.2);
         }
     </style>
 </head>
+
 <body class="p-4">
     <!-- Scanlines effect -->
     <div class="scanlines"></div>
-    
+
     <div class="max-w-6xl mx-auto">
         <!-- Terminal Header -->
         <div class="terminal-bar flex items-center justify-between">
@@ -246,7 +275,7 @@
                 <span id="clock" class="font-mono">00:00:00</span>
             </div>
         </div>
-        
+
         <!-- Terminal Content -->
         <div class="terminal-content p-4 md:p-6">
             <!-- System Boot -->
@@ -258,58 +287,163 @@
                     <div class="text-green-400">> System ready. Terminal active.</div>
                 </div>
             </div>
-            
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Left Column: Payment Form & Status -->
                 <div class="lg:col-span-2">
+                    <!-- Protocol Selection Screen -->
+                    <div id="protocol-selector" class="mb-8">
+                        <h2 class="text-xl font-bold mb-6 text-cyan-400">🔐 SELECT PAYMENT PROTOCOL</h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <!-- ISO 8583 -->
+                            <div class="protocol-card p-4 rounded border-2 border-blue-400 cursor-pointer hover:bg-blue-900 hover:border-blue-300 transition"
+                                onclick="selectProtocol('ISO8583')">
+                                <div class="font-bold text-blue-400 text-lg mb-2">📡 ISO 8583</div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <div>• MTI: 0100→0110 (Auth)</div>
+                                    <div>• MTI: 0200→0210 (Capture)</div>
+                                    <div>• Offline Repeats: 0101-04, 0201-04</div>
+                                    <div>• Fund Pools: CloudFund, ServerFund, VisaNetFund</div>
+                                </div>
+                                <div class="text-xs text-blue-300 font-bold">→ Industry Standard ✓</div>
+                            </div>
+
+                            <!-- EMV -->
+                            <div class="protocol-card p-4 rounded border-2 border-green-400 cursor-pointer hover:bg-green-900 hover:border-green-300 transition"
+                                onclick="selectProtocol('EMV')">
+                                <div class="font-bold text-green-400 text-lg mb-2">💳 EMV (Chip Card)</div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <div>• Contact & Contactless</div>
+                                    <div>• TC (Transaction Certificate)</div>
+                                    <div>• Dynamic Data Auth</div>
+                                    <div>• CVM (Cardholder Verify)</div>
+                                </div>
+                                <div class="text-xs text-green-300 font-bold">→ Coming Soon</div>
+                            </div>
+
+                            <!-- NFC/Mobile -->
+                            <div class="protocol-card p-4 rounded border-2 border-purple-400 cursor-pointer hover:bg-purple-900 hover:border-purple-300 transition"
+                                onclick="selectProtocol('NFC')">
+                                <div class="font-bold text-purple-400 text-lg mb-2">📱 NFC/Mobile</div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <div>• Apple Pay / Google Pay</div>
+                                    <div>• Tokenization</div>
+                                    <div>• APDU Exchange</div>
+                                    <div>• Digital Wallet Support</div>
+                                </div>
+                                <div class="text-xs text-purple-300 font-bold">→ Coming Soon</div>
+                            </div>
+
+                            <!-- ACH Bank Transfer -->
+                            <div class="protocol-card p-4 rounded border-2 border-yellow-400 cursor-pointer hover:bg-yellow-900 hover:border-yellow-300 transition"
+                                onclick="selectProtocol('ACH')">
+                                <div class="font-bold text-yellow-400 text-lg mb-2">🏦 ACH Transfer</div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <div>• Bank Account Direct Debit</div>
+                                    <div>• Routing Number Verification</div>
+                                    <div>• NACHA Format Compliance</div>
+                                    <div>• Settlement 1-2 Business Days</div>
+                                </div>
+                                <div class="text-xs text-yellow-300 font-bold">→ Coming Soon</div>
+                            </div>
+
+                            <!-- Crypto Direct -->
+                            <div class="protocol-card p-4 rounded border-2 border-orange-400 cursor-pointer hover:bg-orange-900 hover:border-orange-300 transition"
+                                onclick="selectProtocol('CRYPTO')">
+                                <div class="font-bold text-orange-400 text-lg mb-2">₿ Crypto Direct</div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <div>• Blockchain Settlement</div>
+                                    <div>• Smart Contracts</div>
+                                    <div>• ETH, BTC, USDT</div>
+                                    <div>• Instant Settlement</div>
+                                </div>
+                                <div class="text-xs text-orange-300 font-bold">→ Coming Soon</div>
+                            </div>
+
+                            <!-- SWIFT International -->
+                            <div class="protocol-card p-4 rounded border-2 border-red-400 cursor-pointer hover:bg-red-900 hover:border-red-300 transition"
+                                onclick="selectProtocol('SWIFT')">
+                                <div class="font-bold text-red-400 text-lg mb-2">🌍 SWIFT</div>
+                                <div class="text-xs text-gray-400 mb-2">
+                                    <div>• International Wire Transfer</div>
+                                    <div>• SWIFT/BIC Code</div>
+                                    <div>• IBAN Format Validation</div>
+                                    <div>• Cross-Border Settlement</div>
+                                </div>
+                                <div class="text-xs text-red-300 font-bold">→ Coming Soon</div>
+                            </div>
+                        </div>
+
+                        <div id="selected-protocol-info"
+                            class="hidden bg-gray-900 border border-green-500 p-4 rounded mb-4">
+                            <div class="text-green-400 font-bold mb-2">✓ Selected: <span
+                                    id="selected-protocol-name"></span></div>
+                            <div class="text-xs text-gray-400">
+                                <div id="selected-protocol-details"></div>
+                            </div>
+                            <button onclick="startPaymentWithProtocol()"
+                                class="w-full mt-3 px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-bold text-white">
+                                Start Payment
+                            </button>
+                            <button onclick="resetProtocolSelection()"
+                                class="w-full mt-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-300">
+                                Select Different Protocol
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Payment Form -->
-                    <div id="payment-section" class="mb-8">
+                    <div id="payment-section" class="hidden mb-8">
                         <h2 class="text-xl font-bold mb-6 text-green-400">PAYMENT TERMINAL</h2>
-                        
+
+                        <div class="bg-blue-900 border border-blue-500 p-4 rounded mb-6 text-sm">
+                            <div class="font-bold text-blue-300 mb-2">📝 Two-Phase Payment Flow:</div>
+                            <div class="text-gray-300">
+                                <div class="mb-1"><span class="text-blue-400">PHASE 1 (AUTH):</span> Fill card details →
+                                    "PROCESS PAYMENT" → Triggers 0100/0110</div>
+                                <div class="mb-1"><span class="text-purple-400">PHASE 2 (CAPTURE):</span> Enter 4-6
+                                    digit approval code → "VERIFY & CAPTURE" → Triggers 0200/0210</div>
+                                <div class="text-gray-500 text-xs mt-2">Use repeat messages 0101-0104 & 0201-0204 if
+                                    OFFLINE</div>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             <div>
                                 <label class="block text-sm mb-2 text-gray-300">CARDHOLDER NAME</label>
-                                <input type="text" id="cardholder-name" 
-                                       class="w-full p-3 input-field rounded"
-                                       placeholder="JOHN DOE"
-                                       value="JOHN DOE">
+                                <input type="text" id="cardholder-name" class="w-full p-3 input-field rounded"
+                                    placeholder="JOHN DOE" value="JOHN DOE">
                             </div>
                             <div>
                                 <label class="block text-sm mb-2 text-gray-300">CARD NUMBER</label>
-                                <input type="text" id="card-number" 
-                                       class="w-full p-3 input-field rounded"
-                                       placeholder="•••• •••• •••• ••••"
-                                       value="4242 4242 4242 4242">
+                                <input type="text" id="card-number" class="w-full p-3 input-field rounded"
+                                    placeholder="•••• •••• •••• ••••" value="4242 4242 4242 4242">
                             </div>
                             <div>
                                 <label class="block text-sm mb-2 text-gray-300">EXPIRY (MM/YY)</label>
-                                <input type="text" id="expiry-date" 
-                                       class="w-full p-3 input-field rounded"
-                                       placeholder="MM/YY"
-                                       value="12/25">
+                                <input type="text" id="expiry-date" class="w-full p-3 input-field rounded"
+                                    placeholder="MM/YY" value="12/25">
                             </div>
                             <div>
                                 <label class="block text-sm mb-2 text-gray-300">CVV</label>
-                                <input type="text" id="cvv" 
-                                       class="w-full p-3 input-field rounded"
-                                       placeholder="•••"
-                                       maxlength="3"
-                                       value="123">
+                                <input type="text" id="cvv" class="w-full p-3 input-field rounded" placeholder="•••"
+                                    maxlength="3" value="123">
                             </div>
                             <div>
                                 <label class="block text-sm mb-2 text-gray-300">AMOUNT (USD)</label>
-                                    <input type="number" id="amount" 
-                                        class="w-full p-3 input-field rounded"
-                                        value=""
-                                        placeholder="Enter amount"
-                                        min="0.01" step="0.01">
+                                <input type="number" id="amount" class="w-full p-3 input-field rounded" value=""
+                                    placeholder="Enter amount" min="0.01" step="0.01">
                             </div>
                             <div>
                                 <label class="block text-sm mb-2 text-gray-300">CRYPTO TYPE</label>
                                 <div class="flex gap-2 mb-2">
-                                    <button onclick="setCrypto('ETH')" class="flex-1 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">ETH</button>
-                                    <button onclick="setCrypto('BTC')" class="flex-1 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">BTC</button>
-                                    <button onclick="setCrypto('USDT')" class="flex-1 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">USDT</button>
+                                    <button onclick="setCrypto('ETH')"
+                                        class="flex-1 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">ETH</button>
+                                    <button onclick="setCrypto('BTC')"
+                                        class="flex-1 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">BTC</button>
+                                    <button onclick="setCrypto('USDT')"
+                                        class="flex-1 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">USDT</button>
                                 </div>
                                 <input type="hidden" id="crypto-type" value="ETH">
                                 <div id="crypto-display" class="text-center text-sm text-green-400">
@@ -317,56 +451,59 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="mb-6">
                             <label class="block text-sm mb-2 text-gray-300">RECIPIENT WALLET ADDRESS</label>
-                            <input type="text" id="wallet-address" 
-                                   class="w-full p-3 input-field rounded text-sm"
-                                   placeholder="0x742d35Cc6634C0532925a3b844Bc9e37E3F84523"
-                                   value="0x742d35Cc6634C0532925a3b844Bc9e37E3F84523">
+                            <input type="text" id="wallet-address" class="w-full p-3 input-field rounded text-sm"
+                                placeholder="0x742d35Cc6634C0532925a3b844Bc9e37E3F84523"
+                                value="0x742d35Cc6634C0532925a3b844Bc9e37E3F84523">
                         </div>
-                        
-                        <button onclick="initiatePayment()" 
-                                id="submit-btn"
-                                class="w-full p-4 btn-primary rounded font-bold">
+
+                        <button onclick="initiatePayment()" id="submit-btn"
+                            class="w-full p-4 btn-primary rounded font-bold">
                             PROCESS PAYMENT
                         </button>
                     </div>
-                    
+
                     <!-- Authorization Form -->
                     <div id="auth-section" class="hidden mb-8">
                         <div class="bg-gray-900 p-6 rounded border border-yellow-400">
                             <div class="flex items-center mb-4">
                                 <span class="text-yellow-400 text-xl mr-3">⚠️</span>
-                                <h3 class="text-lg font-bold text-yellow-400">Approval Code</h3>
+                                <h3 class="text-lg font-bold text-yellow-400">2FA Approval Code</h3>
                             </div>
-                            
-                            <p class="mb-4 text-gray-300">Enter the Approval Code </p>
-                            <p class="mb-4 text-sm text-gray-400"></p>
-                            
+
+                            <p class="mb-2 text-green-400 font-bold">✓ Card Accepted (0100/0110)</p>
+                            <p class="mb-4 text-sm text-yellow-400">→ Requesting Financial Capture (0200/0210)</p>
+
                             <div class="flex gap-4 mb-4">
-                                <input type="text" id="approval-code" 
-                                       class="flex-1 p-3 input-field rounded text-center text-xl"
-                                       placeholder="000000"
-                                       maxlength="6"
-                                       inputmode="numeric">
-                                <button onclick="verifyAuthorization()" 
-                                        class="px-6 btn-success rounded font-bold">
-                                    VERIFY
+                                <input type="text" id="approval-code"
+                                    class="flex-1 p-3 input-field rounded text-center text-xl" placeholder="000000"
+                                    maxlength="6" inputmode="numeric">
+                                <button onclick="verifyAuthorization()" class="px-6 btn-success rounded font-bold">
+                                    VERIFY & CAPTURE
                                 </button>
                             </div>
-                            
-                            <div class="text-sm text-gray-400">
-                                <div class="mb-1">Transaction ID: <span id="current-tx-id" class="font-mono text-green-400"></span></div>
-                                <div>Enter any 4-6 digit code to proceed </div>
+
+                            <div class="text-xs text-gray-400 bg-gray-800 p-3 rounded">
+                                <div class="font-bold text-blue-400 mb-2">📋 ISO 8583 Flow:</div>
+                                <div class="mb-1"><span class="text-green-400">✓ 0100</span> - Card Auth Request</div>
+                                <div class="mb-2"><span class="text-green-400">✓ 0110</span> - Auth Response</div>
+                                <div class="text-yellow-400 font-bold">→ FINANCIAL CAPTURE PHASE:</div>
+                                <div class="mb-1"><span class="text-purple-400">⏳ 0200</span> - Financial Request
+                                    (Capture)</div>
+                                <div><span class="text-purple-400">⏳ 0210</span> - Capture Response</div>
+                                <div class="text-sm mt-2">Transaction ID: <span id="current-tx-id"
+                                        class="font-mono text-green-400"></span></div>
+                                <div class="text-sm text-gray-500">Enter 4-6 digit code to trigger 0200/0210</div>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Status Section -->
                     <div class="mb-6">
                         <h3 class="text-lg font-bold mb-4 text-cyan-400">TRANSACTION STATUS</h3>
-                        
+
                         <div class="space-y-3 mb-4">
                             <div class="flex items-center" id="step-validating">
                                 <div class="status-indicator bg-gray-600"></div>
@@ -385,9 +522,9 @@
                                 <span class="text-gray-400">[4] Transaction Success</span>
                             </div>
                         </div>
-                        
+
                         <div class="progress-bar mb-4"></div>
-                        
+
                         <!-- Status Messages -->
                         <div id="status-messages">
                             <div id="status-waiting" class="text-sm text-gray-400">
@@ -403,7 +540,7 @@
                                 ✅ Transaction completed successfully!
                             </div>
                         </div>
-                        
+
                         <!-- Transaction Details -->
                         <div id="transaction-details" class="hidden mt-6 p-4 bg-gray-900 rounded">
                             <h4 class="font-bold mb-3 text-green-400">TRANSACTION RECEIPT</h4>
@@ -429,12 +566,87 @@
                                     <div id="receipt-blockchain-txid" class="mock-txid mt-1"></div>
                                 </div>
                             </div>
+                            <div class="mt-6 flex gap-3">
+                                <button onclick="resetProtocolSelection()"
+                                    class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition">↺
+                                    Change Protocol</button>
+                                <button onclick="resetForNewTransaction()"
+                                    class="flex-1 py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded font-bold transition">⟳
+                                    New Transaction</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Right Column: Terminal & History -->
                 <div>
+                    <!-- Network Status & ISO 8583 Protocol -->
+                    <div class="mb-8 p-4 rounded border" id="network-panel" style="border-color: #00ff00;">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-green-400">NETWORK STATUS</h3>
+                            <span id="network-mode" class="text-xs font-bold px-2 py-1 rounded bg-green-600">●
+                                ONLINE</span>
+                        </div>
+                        <div class="space-y-2 text-xs text-gray-400 mb-4">
+                            <div>Offline Queue: <span id="offline-count" class="text-green-400">0</span></div>
+                            <div>Cloud Fund: <span id="cloud-fund" class="text-green-400">$100,000</span></div>
+                            <div>Total Messages: <span id="message-count" class="text-green-400">0</span></div>
+                        </div>
+                        <button onclick="toggleNetworkMode()"
+                            class="w-full px-3 py-2 bg-yellow-600 hover:bg-yellow-700 rounded text-xs font-bold mb-2">
+                            Toggle Offline Mode
+                        </button>
+                        <button onclick="replayOfflineMessages()"
+                            class="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-xs">
+                            Replay Offline Queue
+                        </button>
+                    </div>
+
+                    <!-- Fund Management Panel -->
+                    <div class="mb-8 p-4 rounded border border-purple-400">
+                        <h3 class="text-lg font-bold mb-4 text-purple-400">💰 FUND ALLOCATION</h3>
+                        <div class="space-y-3 text-xs">
+                            <div class="bg-gray-900 p-3 rounded">
+                                <div class="text-gray-400 mb-1">CloudFund (0100/110)</div>
+                                <div class="flex justify-between">
+                                    <span class="text-blue-400 font-bold" id="fund-cloud">$100,000</span>
+                                    <span class="text-gray-500" id="fund-cloud-debited">Debited: $0</span>
+                                </div>
+                                <div class="progress-bar mt-2" style="background: #1a3a52;"></div>
+                            </div>
+                            <div class="bg-gray-900 p-3 rounded">
+                                <div class="text-gray-400 mb-1">ServerFund (0200/210)</div>
+                                <div class="flex justify-between">
+                                    <span class="text-green-400 font-bold" id="fund-server">$50,000</span>
+                                    <span class="text-gray-500" id="fund-server-debited">Debited: $0</span>
+                                </div>
+                                <div class="progress-bar mt-2" style="background: #1a3a1a;"></div>
+                            </div>
+                            <div class="bg-gray-900 p-3 rounded">
+                                <div class="text-gray-400 mb-1">VisaNetFund (0101-04/201-04)</div>
+                                <div class="flex justify-between">
+                                    <span class="text-yellow-400 font-bold" id="fund-visanet">$75,000</span>
+                                    <span class="text-gray-500" id="fund-visanet-debited">Debited: $0</span>
+                                </div>
+                                <div class="progress-bar mt-2" style="background: #3a3a1a;"></div>
+                            </div>
+                        </div>
+                        <button onclick="loadFundSummary()"
+                            class="w-full mt-3 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-300">
+                            📊 Refresh Fund Summary
+                        </button>
+                    </div>
+
+                    <!-- ISO 8583 Protocol Log -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-bold mb-4 text-cyan-400">ISO 8583 PROTOCOL</h3>
+                        <div class="terminal-output p-4 h-64 text-xs">
+                            <div id="iso-log">
+                                <!-- ISO messages will appear here -->
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- System Terminal -->
                     <div class="mb-8">
                         <h3 class="text-lg font-bold mb-4 text-purple-400">SYSTEM TERMINAL</h3>
@@ -450,7 +662,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Transaction History -->
                     <div class="mb-6">
                         <div class="flex justify-between items-center mb-4">
@@ -459,7 +671,7 @@
                                 ↻ Refresh
                             </button>
                         </div>
-                        
+
                         <div id="history-list" class="space-y-2">
                             <!-- History items will be loaded here -->
                             <div class="text-center text-gray-500 text-sm py-4">
@@ -467,7 +679,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Admin Controls -->
                     <div class="bg-gray-900 p-4 rounded">
                         <h4 class="font-bold mb-3 text-yellow-400">DEMO CONTROLS</h4>
@@ -477,12 +689,12 @@
                                 None active
                             </div>
                             <div class="flex gap-2 mt-3">
-                                <button onclick="simulateApproval()" 
-                                        class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-xs">
+                                <button onclick="simulateApproval()"
+                                    class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-xs">
                                     Simulate Bank Approval
                                 </button>
-                                <button onclick="simulateSuccess()" 
-                                        class="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-xs">
+                                <button onclick="simulateSuccess()"
+                                    class="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded text-xs">
                                     Force Success
                                 </button>
                             </div>
@@ -490,7 +702,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Footer -->
             <div class="mt-8 pt-6 border-t border-gray-800 text-center text-xs text-gray-500">
                 <div>CARD-TO-CRYPTO GATEWAY TERMINAL v2.0 •</div>
@@ -498,13 +710,68 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         // Global variables
         let currentTransactionId = null;
         let socket = null;
         let systemStartTime = new Date();
-        
+        let selectedProtocol = null;
+
+        // Protocol definitions
+        const PROTOCOLS = {
+            'ISO8583': {
+                name: 'ISO 8583',
+                icon: '📡',
+                description: 'Industry standard packet switching protocol',
+                mtiAuth: ['0100', '0110'],
+                mtiCapture: ['0200', '0210'],
+                mtiRetry: ['0101-04', '0201-04'],
+                funds: ['CloudFund', 'ServerFund', 'VisaNetFund'],
+                status: 'ACTIVE ✓'
+            },
+            'EMV': {
+                name: 'EMV (Chip Card)',
+                icon: '💳',
+                description: 'Europay, Mastercard, Visa - Secured chip transactions',
+                features: ['Contact & Contactless', 'TC (Transaction Certificate)', 'Dynamic Data Auth'],
+                funds: ['ChipCardFund'],
+                status: 'Coming Soon'
+            },
+            'NFC': {
+                name: 'NFC/Mobile',
+                icon: '📱',
+                description: 'Near Field Communication & Mobile wallet payments',
+                features: ['Apple Pay', 'Google Pay', 'Tokenization'],
+                funds: ['MobileWalletFund'],
+                status: 'ACTIVE ✓'
+            },
+            'ACH': {
+                name: 'ACH Transfer',
+                icon: '🏦',
+                description: 'Automated Clearing House bank transfers',
+                features: ['Direct Debit', 'NACHA Compliance', '1-2 Day Settlement'],
+                funds: ['BankTransferFund'],
+                status: 'Coming Soon'
+            },
+            'CRYPTO': {
+                name: 'Crypto Direct',
+                icon: '₿',
+                description: 'Blockchain-based cryptocurrency settlement',
+                features: ['Smart Contracts', 'ETH/BTC/USDT', 'Instant Settlement'],
+                funds: ['CryptoFund'],
+                status: 'Coming Soon'
+            },
+            'SWIFT': {
+                name: 'SWIFT',
+                icon: '🌍',
+                description: 'International wire transfers and cross-border payments',
+                features: ['SWIFT/BIC Code', 'IBAN Validation', 'Multi-currency'],
+                funds: ['InternationalFund'],
+                status: 'Coming Soon'
+            }
+        };
+
         // Initialize clock
         function updateClock() {
             const now = new Date();
@@ -513,75 +780,209 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
-        
+
+        // Protocol Selection Functions
+        function selectProtocol(protocolKey) {
+            selectedProtocol = protocolKey;
+            const protocol = PROTOCOLS[protocolKey];
+
+            // Update UI to show selected protocol
+            document.getElementById('selected-protocol-info').classList.remove('hidden');
+            document.getElementById('selected-protocol-name').textContent = `${protocol.icon} ${protocol.name}`;
+
+            // Build details
+            let details = `<div class="mb-2 font-bold text-gray-300">${protocol.description}</div>`;
+
+            if (protocol.mtiAuth) {
+                details += `<div>💬 Auth MTI: ${protocol.mtiAuth.join(' → ')}</div>`;
+                details += `<div>💬 Capture MTI: ${protocol.mtiCapture.join(' → ')}</div>`;
+                details += `<div>💬 Retry MTI: ${protocol.mtiRetry.join(', ')}</div>`;
+            } else {
+                details += `<div>🔧 Features: ${protocol.features.join(', ')}</div>`;
+            }
+
+            details += `<div class="mt-2">💰 Fund Pools: ${protocol.funds.join(', ')}</div>`;
+            details += `<div class="mt-2 text-gray-500 text-xs">Status: ${protocol.status}</div>`;
+
+            document.getElementById('selected-protocol-details').innerHTML = details;
+
+            // Highlight selected card
+            document.querySelectorAll('.protocol-card').forEach(card => {
+                card.style.opacity = '0.5';
+            });
+            event.currentTarget.style.opacity = '1';
+            event.currentTarget.style.borderWidth = '3px';
+
+            logToTerminal(`Protocol selected: ${protocol.name}`, 'cyan-400');
+        }
+
+        function startPaymentWithProtocol() {
+            if (!selectedProtocol) {
+                alert('Please select a protocol first');
+                return;
+            }
+
+            const protocol = PROTOCOLS[selectedProtocol];
+
+            // Only ISO8583 and NFC are active, others coming soon
+            if (selectedProtocol !== 'ISO8583' && selectedProtocol !== 'NFC') {
+                alert(`${protocol.name} is ${protocol.status}. Only ISO 8583 and NFC available now.`);
+                return;
+            }
+
+            // Hide protocol selector and show payment form
+            document.getElementById('protocol-selector').classList.add('hidden');
+            document.getElementById('payment-section').classList.remove('hidden');
+
+            logToTerminal(`═════════════════════════════════════════`, 'cyan-400');
+            logToTerminal(`Protocol Mode: ${protocol.name}`, 'cyan-400');
+            logToTerminal(`Payment Gateway: CARD-TO-CRYPTO`, 'cyan-400');
+            logToTerminal(`Ready for card input...`, 'green-400');
+            logToTerminal(`═════════════════════════════════════════`, 'cyan-400');
+        }
+
+        function resetProtocolSelection() {
+            selectedProtocol = null;
+            document.getElementById('selected-protocol-info').classList.add('hidden');
+            document.querySelectorAll('.protocol-card').forEach(card => {
+                card.style.opacity = '1';
+                card.style.borderWidth = '2px';
+            });
+
+            // Hide payment section and show protocol selector again
+            document.getElementById('protocol-selector').classList.remove('hidden');
+            document.getElementById('payment-section').classList.add('hidden');
+            document.getElementById('transaction-details').classList.add('hidden');
+
+            // Clear form fields
+            document.getElementById('card-number').value = '';
+            document.getElementById('card-holder').value = '';
+            document.getElementById('exp-date').value = '';
+            document.getElementById('cvv').value = '';
+            document.getElementById('approval-code').value = '';
+            document.getElementById('amount-input').value = '';
+
+            currentTransactionId = null;
+
+            logToTerminal('Protocol selection reset - showing protocol selector', 'yellow-400');
+        }
+
+        function resetForNewTransaction() {
+            // Hide transaction receipt
+            document.getElementById('transaction-details').classList.add('hidden');
+
+            // Show and reset payment form
+            document.getElementById('payment-section').classList.remove('hidden');
+            document.getElementById('card-form-section').classList.remove('hidden');
+            document.getElementById('code-form-section').classList.add('hidden');
+            document.getElementById('receipt-section').classList.add('hidden');
+
+            // Clear form fields
+            document.getElementById('card-number').value = '';
+            document.getElementById('card-holder').value = '';
+            document.getElementById('exp-date').value = '';
+            document.getElementById('cvv').value = '';
+            document.getElementById('approval-code').value = '';
+            document.getElementById('amount-input').value = '';
+
+            // Reset current transaction ID
+            currentTransactionId = null;
+
+            logToTerminal('═════════════════════════════════════════', 'cyan-400');
+            logToTerminal('Ready for new transaction...', 'green-400');
+            logToTerminal('═════════════════════════════════════════', 'cyan-400');
+        }
+
         // Initialize WebSocket connection
         function initWebSocket() {
             socket = io();
-            
+
             socket.on('connect', () => {
                 logToTerminal('Connected to gateway server', 'green-400');
                 document.getElementById('terminal-status').textContent = '● Online';
                 document.getElementById('terminal-status').className = 'text-green-400';
             });
-            
+
             socket.on('disconnect', () => {
                 logToTerminal('Disconnected from server', 'red-400');
                 document.getElementById('terminal-status').textContent = '● Offline';
                 document.getElementById('terminal-status').className = 'text-red-400';
             });
-            
+
             socket.on('status_update', (data) => {
                 if (data.transaction_id === currentTransactionId) {
                     updateStatus(data.status);
                 }
                 loadTransactionHistory();
+                updateNetworkStatus();
+                loadFundSummary();
+            });
+
+            socket.on('network_status_changed', (data) => {
+                updateNetworkStatus();
+                const mode = data.online ? 'ONLINE' : 'OFFLINE';
+                logToTerminal(`Network mode changed to: ${mode}`, 'yellow-400');
+            });
+
+            socket.on('iso_log_update', (data) => {
+                const { mti, transaction_id, online } = data;
+                logISO8583(mti, transaction_id, online);
+                updateNetworkStatus();
             });
         }
-        
+
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', () => {
             initWebSocket();
             loadTransactionHistory();
+            updateNetworkStatus();
+            loadFundSummary();
             logToTerminal('System initialized', 'green-400');
+            logToTerminal('═══════════════════════════════════════', 'cyan-400');
+            logToTerminal('TWO-PHASE PAYMENT FLOW:', 'cyan-400');
+            logToTerminal('PHASE 1 (AUTH): 0100→0110 (CloudFund→VisaNetFund)', 'blue-400');
+            logToTerminal('PHASE 2 (CAPTURE): 0200→0210 (ServerFund→VisaNetFund)', 'purple-400');
+            logToTerminal('OFFLINE: Uses 0101-0104 and 0201-0204 (VisaNetFund)', 'yellow-400');
+            logToTerminal('═══════════════════════════════════════', 'cyan-400');
             logToTerminal('Ready to process transactions', 'green-400');
         });
-        
+
         // Helper functions
         // preset amount function removed; amount is entered manually by user
-        
+
         function setCrypto(type) {
             document.getElementById('crypto-type').value = type;
             document.getElementById('selected-crypto').textContent = type;
         }
-        
+
         // Format card number
-        document.getElementById('card-number').addEventListener('input', function(e) {
+        document.getElementById('card-number').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');
             value = value.replace(/(\d{4})/g, '$1 ').trim();
             e.target.value = value.substring(0, 19);
         });
-        
+
         // Log to terminal
         function logToTerminal(message, color = 'green-400') {
             const terminal = document.getElementById('terminal-logs');
             const logEntry = document.createElement('div');
             logEntry.className = `mb-1 text-${color}`;
-            const time = new Date().toLocaleTimeString([], {hour12: false, hour: '2-digit', minute:'2-digit'});
+            const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
             logEntry.textContent = `[${time}] ${message}`;
             terminal.appendChild(logEntry);
             terminal.scrollTop = terminal.scrollHeight;
         }
-        
+
         // Update status UI
         function updateStatus(status) {
             // Update status steps
             const steps = ['validating', 'authorization', 'releasing', 'success'];
             const stepIndex = steps.indexOf(status);
-            
+
             steps.forEach((step, index) => {
                 const stepEl = document.getElementById(`step-${step}`);
                 const indicator = stepEl.querySelector('.status-indicator');
-                
+
                 if (index < stepIndex) {
                     // Previous steps - completed
                     indicator.className = 'status-indicator bg-blue-500';
@@ -596,11 +997,11 @@
                     stepEl.classList.remove('status-active', 'status-complete');
                 }
             });
-            
+
             // Update status messages
             document.getElementById('status-waiting').classList.add('hidden');
             document.getElementById('status-processing').classList.remove('hidden');
-            
+
             if (status === 'authorized') {
                 document.getElementById('status-processing').classList.add('hidden');
                 document.getElementById('status-authorized').classList.remove('hidden');
@@ -609,10 +1010,10 @@
                 document.getElementById('status-complete').classList.remove('hidden');
                 showTransactionReceipt();
             }
-            
+
             logToTerminal(`Status updated: ${status}`, 'blue-400');
         }
-        
+
         // Initiate payment
         async function initiatePayment() {
             const cardholder = document.getElementById('cardholder-name').value;
@@ -622,18 +1023,18 @@
             const amount = document.getElementById('amount').value;
             const cryptoType = document.getElementById('crypto-type').value;
             const walletAddress = document.getElementById('wallet-address').value;
-            
+
             // Basic validation
             if (!cardholder || !cardNumber || !expiry || !cvv || !amount || !walletAddress) {
                 alert('Please fill all fields');
                 return;
             }
-            
+
             if (cardNumber.length < 16) {
                 alert('Please enter a valid card number');
                 return;
             }
-            
+
             // Calculate crypto amount (mock conversion)
             const conversionRates = {
                 'ETH': 2500,
@@ -641,14 +1042,14 @@
                 'USDT': 1
             };
             const cryptoAmount = amount / conversionRates[cryptoType];
-            
+
             // Disable submit button
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
             submitBtn.textContent = 'PROCESSING...';
-            
+
             logToTerminal('Initiating payment...', 'yellow-400');
-            
+
             try {
                 const response = await fetch('/api/submit-card', {
                     method: 'POST',
@@ -666,33 +1067,47 @@
                         wallet_address: walletAddress
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     currentTransactionId = data.transaction_id;
-                    
+
+                    // Emit ISO 8583 messages
+                    socket.emit('iso8583_message', { mti: '0100', transaction_id: currentTransactionId });
+                    logISO8583('0100', currentTransactionId, data.mode === 'ONLINE');
+
+                    if (data.mode === 'ONLINE') {
+                        socket.emit('iso8583_message', { mti: '0110', transaction_id: currentTransactionId });
+                        logISO8583('0110', currentTransactionId, true);
+                        logToTerminal('0110 Authorization Response (VisaNetFund) - AUTH PHASE COMPLETE', 'blue-400');
+                    } else {
+                        socket.emit('iso8583_message', { mti: '0101', transaction_id: currentTransactionId });
+                        logISO8583('0101', currentTransactionId, false);
+                        logToTerminal('0101 Authorization Request Repeat [OFFLINE] (VisaNetFund) - RETRY QUEUED', 'yellow-400');
+                    }
+
                     // Show authorization form
                     document.getElementById('payment-section').classList.add('hidden');
                     document.getElementById('auth-section').classList.remove('hidden');
                     document.getElementById('current-tx-id').textContent = currentTransactionId;
-                    
+
                     // Update current transaction info
                     document.getElementById('current-transaction-info').innerHTML = `
                         <div class="font-mono">${currentTransactionId}</div>
                         <div>$${amount} → ${cryptoAmount.toFixed(6)} ${cryptoType}</div>
                     `;
-                    
+
                     // Subscribe to updates
                     socket.emit('subscribe', { transaction_id: currentTransactionId });
-                    
+
                     logToTerminal(`Transaction created: ${currentTransactionId}`, 'green-400');
-                    
+
                     // Simulate validation delay
                     setTimeout(() => {
                         updateStatus('validating');
                     }, 1000);
-                    
+
                 } else {
                     throw new Error(data.error);
                 }
@@ -704,28 +1119,28 @@
                 submitBtn.textContent = 'PROCESS PAYMENT';
             }
         }
-        
+
         // Verify authorization code
         async function verifyAuthorization() {
             const approvalCode = document.getElementById('approval-code').value;
-            
+
             if (!approvalCode) {
                 alert('Please enter an approval code');
                 return;
             }
-            
+
             if (approvalCode.length < 4 || approvalCode.length > 6) {
                 alert('Approval code must be 4-6 digits');
                 return;
             }
-            
+
             if (!/^\d+$/.test(approvalCode)) {
                 alert('Approval code must contain only digits');
                 return;
             }
-            
+
             logToTerminal('Verifying authorization code...', 'yellow-400');
-            
+
             try {
                 const response = await fetch('/api/verify-code', {
                     method: 'POST',
@@ -737,20 +1152,30 @@
                         approval_code: approvalCode
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
-                    logToTerminal('Authorization successful', 'green-400');
+                    logToTerminal('✓ Approval Code Verified - Initiating CAPTURE PHASE', 'green-400');
+
+                    // Emit ISO 8583 Financial messages
+                    socket.emit('iso8583_message', { mti: '0200', transaction_id: currentTransactionId });
+                    logISO8583('0200', currentTransactionId, true);
+                    logToTerminal('0200 Financial Request [CAPTURE] (ServerFund) - PHASE START', 'purple-400');
+
+                    socket.emit('iso8583_message', { mti: '0210', transaction_id: currentTransactionId });
+                    logISO8583('0210', currentTransactionId, true);
+                    logToTerminal('0210 Financial Response Capture (VisaNetFund) - PHASE COMPLETE', 'purple-400');
+
                     updateStatus('authorized');
-                    
+
                     // Hide auth form
                     document.getElementById('auth-section').classList.add('hidden');
                     document.getElementById('approval-code').value = '';
-                    
+
                     // Simulate blockchain processing
                     simulateBlockchainProcessing();
-                    
+
                 } else {
                     throw new Error(data.error);
                 }
@@ -759,16 +1184,16 @@
                 alert('Authorization failed: ' + error.message);
             }
         }
-        
+
         // Simulate blockchain processing
         function simulateBlockchainProcessing() {
             logToTerminal('Initiating blockchain transaction...', 'blue-400');
-            
+
             // Simulate processing delay
             setTimeout(() => {
                 updateStatus('releasing');
                 logToTerminal('Transaction broadcast to blockchain', 'green-400');
-                
+
                 // Mark as success after delay
                 setTimeout(() => {
                     fetch('/api/admin/update-status', {
@@ -784,42 +1209,42 @@
                 }, 1000);
             }, 2000);
         }
-        
+
         // Show transaction receipt
         async function showTransactionReceipt() {
             try {
                 const response = await fetch(`/api/status/${currentTransactionId}`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     const amount = document.getElementById('amount').value;
                     const cryptoType = document.getElementById('crypto-type').value;
                     const walletAddress = document.getElementById('wallet-address').value;
-                    
+
                     document.getElementById('receipt-tx-id').textContent = currentTransactionId;
                     document.getElementById('receipt-amount').textContent = `$${amount} USD`;
-                    document.getElementById('receipt-crypto').textContent = 
+                    document.getElementById('receipt-crypto').textContent =
                         `${data.crypto_amount.toFixed(6)} ${cryptoType}`;
-                    document.getElementById('receipt-blockchain-txid').textContent = 
+                    document.getElementById('receipt-blockchain-txid').textContent =
                         data.blockchain_txid || 'Pending...';
-                    
+
                     document.getElementById('transaction-details').classList.remove('hidden');
-                    
+
                     logToTerminal('Transaction completed successfully', 'green-400');
                 }
             } catch (error) {
                 console.error('Error fetching receipt:', error);
             }
         }
-        
+
         // Load transaction history
         async function loadTransactionHistory() {
             try {
                 const response = await fetch('/api/transactions');
                 const transactions = await response.json();
-                
+
                 const historyList = document.getElementById('history-list');
-                
+
                 if (transactions.length === 0) {
                     historyList.innerHTML = `
                         <div class="text-center text-gray-500 text-sm py-4">
@@ -828,13 +1253,13 @@
                     `;
                     return;
                 }
-                
+
                 historyList.innerHTML = '';
-                
+
                 transactions.forEach(tx => {
                     const item = document.createElement('div');
                     item.className = 'transaction-item p-3 bg-gray-900 rounded';
-                    
+
                     const timeAgo = getTimeAgo(new Date(tx.created_at));
                     const statusColor = {
                         'success': 'text-green-400',
@@ -842,7 +1267,7 @@
                         'authorized': 'text-blue-400',
                         'validating': 'text-gray-400'
                     }[tx.status] || 'text-gray-400';
-                    
+
                     item.innerHTML = `
                         <div class="flex justify-between items-start">
                             <div>
@@ -855,24 +1280,24 @@
                             </div>
                         </div>
                     `;
-                    
+
                     historyList.appendChild(item);
                 });
             } catch (error) {
                 console.error('Error loading history:', error);
             }
         }
-        
+
         // Helper: Get time ago
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
-            
+
             if (seconds < 60) return 'just now';
             if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
             if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
             return Math.floor(seconds / 86400) + 'd ago';
         }
-        
+
         // Demo controls
         function simulateApproval() {
             if (currentTransactionId) {
@@ -882,7 +1307,7 @@
                 alert('Start a transaction first');
             }
         }
-        
+
         function simulateSuccess() {
             if (currentTransactionId) {
                 fetch('/api/admin/update-status', {
@@ -897,6 +1322,108 @@
                 });
             } else {
                 alert('Start a transaction first');
+            }
+        }
+
+        // ISO 8583 Protocol Functions
+        const MTI_NAMES = {
+            '0100': 'Authorization Request [AUTH]',
+            '0101': 'Authorization Request - Repeat 1 [AUTH RETRY]',
+            '0102': 'Authorization Request - Repeat 2 [AUTH RETRY]',
+            '0103': 'Authorization Request - Repeat 3 [AUTH RETRY]',
+            '0104': 'Authorization Request - Repeat 4 [AUTH RETRY]',
+            '0110': 'Authorization Response [AUTH]',
+            '0111': 'Authorization Response - Repeat [AUTH RETRY]',
+            '0112': 'Authorization Response - Repeat [AUTH RETRY]',
+            '0113': 'Authorization Response - Repeat [AUTH RETRY]',
+            '0114': 'Authorization Response - Repeat [AUTH RETRY]',
+            '0200': 'Financial Request/Capture [CAPTURE]',
+            '0201': 'Financial Request - Repeat 1 [CAPTURE RETRY]',
+            '0202': 'Financial Request - Repeat 2 [CAPTURE RETRY]',
+            '0203': 'Financial Request - Repeat 3 [CAPTURE RETRY]',
+            '0204': 'Financial Request - Repeat 4 [CAPTURE RETRY]',
+            '0210': 'Financial Response/Capture [CAPTURE]',
+            '0211': 'Financial Response - Repeat [CAPTURE RETRY]',
+            '0212': 'Financial Response - Repeat [CAPTURE RETRY]',
+            '0213': 'Financial Response - Repeat [CAPTURE RETRY]',
+            '0214': 'Financial Response - Repeat [CAPTURE RETRY]'
+        };
+
+        function logISO8583(mti, txId, online) {
+            const isoLog = document.getElementById('iso-log');
+            const entry = document.createElement('div');
+            const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const modeColor = online ? 'text-green-400' : 'text-yellow-400';
+            const modeText = online ? 'ONLINE' : 'OFFLINE';
+            entry.className = `mb-2 ${modeColor}`;
+            entry.textContent = `[${time}] ${mti} ${MTI_NAMES[mti] || 'Unknown'} (${modeText})`;
+            isoLog.appendChild(entry);
+            isoLog.scrollTop = isoLog.scrollHeight;
+        }
+
+        async function updateNetworkStatus() {
+            try {
+                const response = await fetch('/api/network-status');
+                const data = await response.json();
+
+                const modePanel = document.getElementById('network-panel');
+                const modeBtn = document.getElementById('network-mode');
+
+                if (data.online) {
+                    modePanel.style.borderColor = '#00ff00';
+                    modeBtn.textContent = '● ONLINE';
+                    modeBtn.className = 'text-xs font-bold px-2 py-1 rounded bg-green-600';
+                } else {
+                    modePanel.style.borderColor = '#ffff00';
+                    modeBtn.textContent = '● OFFLINE';
+                    modeBtn.className = 'text-xs font-bold px-2 py-1 rounded bg-yellow-600';
+                }
+
+                document.getElementById('offline-count').textContent = data.offlineQueueLength;
+                document.getElementById('cloud-fund').textContent = '$' + data.cloudFund.toLocaleString();
+                document.getElementById('message-count').textContent = data.totalMessages;
+            } catch (error) {
+                console.error('Error updating network status:', error);
+            }
+        }
+
+        async function toggleNetworkMode() {
+            try {
+                const response = await fetch('/api/network/toggle', { method: 'POST' });
+                const data = await response.json();
+                updateNetworkStatus();
+                const mode = data.online ? 'ONLINE' : 'OFFLINE';
+                logToTerminal(`Network switched to ${mode}`, 'yellow-400');
+            } catch (error) {
+                logToTerminal(`Error toggling network: ${error.message}`, 'red-400');
+            }
+        }
+
+        async function replayOfflineMessages() {
+            try {
+                const response = await fetch('/api/network/replay', { method: 'POST' });
+                const data = await response.json();
+                logToTerminal(`Replayed ${data.replayed} offline messages`, 'blue-400');
+                updateNetworkStatus();
+            } catch (error) {
+                logToTerminal(`Error replaying messages: ${error.message}`, 'red-400');
+            }
+        }
+
+        async function loadFundSummary() {
+            try {
+                const response = await fetch('/api/funds');
+                const data = await response.json();
+
+                document.getElementById('fund-cloud').textContent = '$' + data.cloudFund.toLocaleString();
+                document.getElementById('fund-server').textContent = '$' + data.serverFund.toLocaleString();
+                document.getElementById('fund-visanet').textContent = '$' + data.visaNetFund.toLocaleString();
+
+                document.getElementById('fund-cloud-debited').textContent = 'Debited: $' + data.cloudFundDebited.toLocaleString();
+                document.getElementById('fund-server-debited').textContent = 'Debited: $' + data.serverFundDebited.toLocaleString();
+                document.getElementById('fund-visanet-debited').textContent = 'Debited: $' + data.visaNetFundDebited.toLocaleString();
+            } catch (error) {
+                console.error('Error loading fund summary:', error);
             }
         }
     </script>
